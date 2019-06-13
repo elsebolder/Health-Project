@@ -1,0 +1,58 @@
+#include <Arduino.h>
+#include "BasicStepperDriver.h"
+
+// Motor stepPins per revolution. Most stepPinpers are 200 stepPins or 1.8 degrees/stepPin
+#define MOTOR_STEPS 200
+#define RPM 40
+// Since microstepPinping is set externally, make sure this matches the selected mode
+// If it doesn't, the motor will move at a different RPM than chosen
+// 1=full stepPin, 2=half stepPin etc.
+#define MICROSTEPS 2
+
+// All the wires needed for full functionality
+#define dirPin 2
+#define stepPin 3
+
+// 2-wire basic config, microstepPinping is hardwired on the driver
+BasicStepperDriver stepper(MOTOR_STEPS, dirPin, stepPin);
+
+// Define pin connections & motor's stepPins per revolution
+const int lowerSwitch = 7;
+const int upperSwitch = 9;
+
+int fsrAnalogPin = 0; // FSR is connected to analog 0;
+int fsrReading; // the analog reading from the FSR resistor divider
+
+void setup()
+{
+  // Declare pins as Outputs
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin, OUTPUT);
+  pinMode(lowerSwitch, INPUT);
+  pinMode(upperSwitch, INPUT);
+  pinMode(fsrAnalogPin, INPUT);
+  Serial.begin(9600);
+
+  stepper.begin(RPM, MICROSTEPS);
+  while (!digitalRead(lowerSwitch)) {
+    Serial.println("loop");
+    stepper.move(-2);
+  }
+}
+
+void loop()
+{
+  stepper1();
+}
+
+void stepper1() {
+  fsrReading = analogRead(fsrAnalogPin);
+  Serial.print("Analog reading = ");
+  Serial.println(fsrReading);
+
+  if (fsrReading > 50 && digitalRead(upperSwitch) == LOW) {// if FSR is pressed
+    Serial.println("Going up");
+    stepper.move(2);
+
+  if (fsrReading < 50 && digitalRead(lowerSwitch) == LOW) {// if FSR is not pressed
+    stepper.move(-2);
